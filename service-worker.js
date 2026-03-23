@@ -1,14 +1,14 @@
-const CACHE_NAME = "celldef-v1.0.0";
+const CACHE_NAME = "celldef-v1.0.1";
 const ASSETS = [
-  "/",
-  "/index.html",
-  "/css/style.css",
-  "/js/game.js",
-  "/js/vocab.js",
-  "/manifest.json",
-  "/icons/icon-192.svg",
-  "/icons/icon-512.svg",
-  "/icons/apple-touch-icon.svg",
+  "./",
+  "index.html",
+  "css/style.css",
+  "js/game.js",
+  "js/vocab.js",
+  "manifest.json",
+  "icons/icon-192.svg",
+  "icons/icon-512.svg",
+  "icons/apple-touch-icon.svg",
 ];
 
 self.addEventListener("install", (e) => {

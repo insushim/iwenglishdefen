@@ -1,8 +1,12 @@
 // ============================================================
 // 셀 디펜더 - Cell Defender (HTML5 Canvas Game Engine)
 // ============================================================
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.0.1";
 const canvas = document.getElementById("gameCanvas");
+if (!canvas) {
+  document.body.innerHTML = '<h1 style="color:red">Canvas not found</h1>';
+  throw new Error("no canvas");
+}
 const ctx = canvas.getContext("2d");
 
 // ── 해상도 ──
