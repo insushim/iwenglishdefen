@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html><head><title>Icon Generator</title></head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// 이 파일을 브라우저에서 열면 아이콘들을 다운로드할 수 있습니다
+const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+
+function drawIcon(size, maskable) {
+  c.width = size; c.height = size;
+  const cx = size/2, cy = size/2, s = size;
+
+  // 배경
+  if (maskable) {
+    ctx.fillStyle = '#0d0a1a';
+    ctx.fillRect(0, 0, s, s);
+  } else {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, s*0.6);
+    g.addColorStop(0, '#1a1535');
+    g.addColorStop(1, '#0d0a1a');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, s, s);
+  }
+
+  // 보호 링
+  ctx.strokeStyle = 'rgba(100,150,255,0.3)';
+  ctx.lineWidth = s * 0.02;
+  ctx.beginPath(); ctx.arc(cx, cy, s*0.35, 0, Math.PI*2); ctx.stroke();
+
+  // 하트
+  const hz = s * 0.22;
+  ctx.save(); ctx.translate(cx, cy + hz*0.05);
+  ctx.fillStyle = '#e81030';
+  ctx.beginPath();
+  ctx.moveTo(0, hz*0.35);
+  ctx.bezierCurveTo(-hz*0.1, hz*0.1, -hz*0.6, hz*0.1, -hz*0.6, -hz*0.2);
+  ctx.bezierCurveTo(-hz*0.6, -hz*0.55, -hz*0.1, -hz*0.55, 0, -hz*0.25);
+  ctx.bezierCurveTo(hz*0.1, -hz*0.55, hz*0.6, -hz*0.55, hz*0.6, -hz*0.2);
+  ctx.bezierCurveTo(hz*0.6, hz*0.1, hz*0.1, hz*0.1, 0, hz*0.35);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,150,150,0.5)';
+  ctx.beginPath(); ctx.arc(-hz*0.2, -hz*0.2, hz*0.12, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // 세포 장식
+  const cells = [[s*0.15, s*0.2, s*0.04, '#ff4444'], [s*0.82, s*0.3, s*0.035, '#44ff44'],
+    [s*0.2, s*0.78, s*0.03, '#4488ff'], [s*0.8, s*0.75, s*0.04, '#ffaa00']];
+  for (const [x,y,r,col] of cells) {
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = col.replace(')', ',0.5)').replace('rgb', 'rgba');
+    ctx.beginPath(); ctx.arc(x-r*0.3, y-r*0.3, r*0.4, 0, Math.PI*2); ctx.fill();
+  }
+
+  // 총알 궤적
+  ctx.strokeStyle = 'rgba(100,200,255,0.6)';
+  ctx.lineWidth = s * 0.015;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(s*0.85, s*0.15); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(s*0.1, s*0.12); ctx.stroke();
+
+  return c.toDataURL('image/png');
+}
+
+// 생성 및 다운로드 링크
+const container = document.createElement('div');
+container.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;padding:20px;background:#222;';
+document.body.appendChild(container);
+
+for (const sz of sizes) {
+  const dataUrl = drawIcon(sz, false);
+  const a = document.createElement('a');
+  a.href = dataUrl; a.download = `icon-${sz}.png`;
+  a.innerHTML = `<img src="${dataUrl}" style="border:1px solid #555"><br>icon-${sz}.png`;
+  a.style.cssText = 'color:#fff;text-align:center;text-decoration:none;font:12px sans-serif';
+  container.appendChild(a);
+}
+
+// Maskable
+const maskUrl = drawIcon(512, true);
+const ma = document.createElement('a');
+ma.href = maskUrl; ma.download = 'icon-512-maskable.png';
+ma.innerHTML = `<img src="${maskUrl}" style="border:1px solid #555"><br>maskable`;
+ma.style.cssText = 'color:#fff;text-align:center;text-decoration:none;font:12px sans-serif';
+container.appendChild(ma);
+
+// Apple touch icon
+const atUrl = drawIcon(180, false);
+const ata = document.createElement('a');
+ata.href = atUrl; ata.download = 'apple-touch-icon.png';
+ata.innerHTML = `<img src="${atUrl}" style="border:1px solid #555"><br>apple-touch`;
+ata.style.cssText = 'color:#fff;text-align:center;text-decoration:none;font:12px sans-serif';
+container.appendChild(ata);
+
+// OG Image (1200x630)
+c.width = 1200; c.height = 630;
+ctx.fillStyle = '#0d0a1a'; ctx.fillRect(0,0,1200,630);
+drawIcon(400, false);
+// redraw at center
+const ogUrl = c.toDataURL('image/png');
+const oga = document.createElement('a');
+oga.href = ogUrl; oga.download = 'og-image.png';
+oga.innerHTML = `<img src="${ogUrl}" width="300" style="border:1px solid #555"><br>og-image`;
+oga.style.cssText = 'color:#fff;text-align:center;text-decoration:none;font:12px sans-serif';
+container.appendChild(oga);
+
+container.insertAdjacentHTML('beforebegin', '<h2 style="color:#fff;padding:20px">클릭하면 다운로드됩니다. icons/ 폴더에 넣어주세요.</h2>');
+</script>
+</body>
+</html>

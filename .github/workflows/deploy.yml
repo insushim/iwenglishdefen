@@ -1,0 +1,107 @@
+name: Deploy & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+  deploy-cloudflare:
+    name: Deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy . --project-name=celldefender
+
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create Android Project
+        run: |
+          mkdir -p android-build/app/src/main/java/com/celldefender/app
+          mkdir -p android-build/app/src/main/res/values
+          mkdir -p android-build/app/src/main/res/drawable
+          mkdir -p android-build/app/src/main/res/mipmap-hdpi
+          mkdir -p android-build/app/src/main/res/mipmap-xhdpi
+          mkdir -p android-build/app/src/main/res/mipmap-xxhdpi
+          mkdir -p android-build/app/src/main/res/xml
+          mkdir -p android-build/app/src/main/assets/www
+
+          # Copy web files to assets
+          cp index.html android-build/app/src/main/assets/www/
+          cp -r css android-build/app/src/main/assets/www/
+          cp -r js android-build/app/src/main/assets/www/
+          cp manifest.json android-build/app/src/main/assets/www/
+          cp service-worker.js android-build/app/src/main/assets/www/
+          cp -r icons android-build/app/src/main/assets/www/
+
+          # Copy Android project files
+          cp android/build.gradle.kts android-build/build.gradle.kts
+          cp android/settings.gradle.kts android-build/settings.gradle.kts
+          cp android/gradle.properties android-build/gradle.properties
+          cp android/app/build.gradle.kts android-build/app/build.gradle.kts
+          cp android/app/src/main/AndroidManifest.xml android-build/app/src/main/AndroidManifest.xml
+          cp android/app/src/main/java/com/celldefender/app/MainActivity.java android-build/app/src/main/java/com/celldefender/app/MainActivity.java
+          cp android/app/src/main/res/values/strings.xml android-build/app/src/main/res/values/strings.xml
+          cp android/app/src/main/res/values/styles.xml android-build/app/src/main/res/values/styles.xml
+          cp android/app/src/main/res/xml/network_security_config.xml android-build/app/src/main/res/xml/network_security_config.xml
+
+          # Generate launcher icon from SVG
+          cp icons/icon-192.svg android-build/app/src/main/res/drawable/ic_launcher.svg
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        working-directory: android-build
+        run: |
+          chmod +x gradlew 2>/dev/null || true
+          gradle wrapper --gradle-version 8.5
+          ./gradlew assembleRelease || ./gradlew assembleDebug
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: "셀 디펜더 ${{ steps.version.outputs.version }}"
+          body: |
+            ## 셀 디펜더 - Cell Defender ${{ steps.version.outputs.version }}
+
+            ### 설치 방법
+            - **Android**: APK 다운로드 후 설치
+            - **iOS**: 웹 브라우저에서 접속 → 홈 화면에 추가 (PWA)
+            - **웹**: https://celldefender.pages.dev
+
+            ### 변경사항
+            - 자동 생성된 릴리스
+          files: |
+            android-build/app/build/outputs/apk/**/*.apk
+          draft: false
+          prerelease: false
